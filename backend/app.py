@@ -45,12 +45,17 @@ def create_app(config_class=Config):
     base_dir = os.path.dirname(os.path.abspath(__file__))
     dist_dir = os.path.abspath(os.path.join(base_dir, '..', 'frontend', 'dist'))
     
-    app = Flask(__name__, static_folder=dist_dir, static_url_path='')
+    if os.path.exists(dist_dir):
+        app = Flask(__name__, static_folder=dist_dir, static_url_path='')
+    else:
+        app = Flask(__name__)
+        
     app.config.from_object(config_class)
     
-    # Enable CORS for development (React dev server on 5173 talking to Flask on 5000)
+    # Enable CORS for development and production domains
+    allowed_origins = os.environ.get('ALLOWED_ORIGINS', '*').split(',')
     CORS(app, resources={r"/api/*": {
-        "origins": ["http://localhost:5173"],
+        "origins": allowed_origins,
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
     }})
