@@ -1,0 +1,27 @@
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Python Cache
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Node Modules (Frontend packages)
+**/node_modules/
+**/dist/
+
+# Local Environment Secrets
+**/backend/.env
+.env
+
+# Local Databases
+**/backend/telangana_moderation.db
+*.db
+*.sqlite
+
+# OS generated files
+.DS_Store
+Thumbs.db

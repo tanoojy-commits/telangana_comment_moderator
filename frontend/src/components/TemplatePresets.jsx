@@ -1,0 +1,185 @@
+import React from 'react';
+
+export default function TemplatePresets({ onUseTemplate }) {
+  const presets = [
+    {
+      id: 1,
+      name: "Clean Reader Opinion",
+      category: "Positive",
+      article_title: "Telangana government distributes free tablets to students",
+      comment_text: "This is an excellent initiative. Education technology can really help rural students. I hope the quality of the tablets is good and teachers receive proper training too.",
+      likelyVerdict: "ALLOW",
+      dotColor: "#10B981"
+    },
+    {
+      id: 2,
+      name: "Constructive Criticism",
+      category: "Constructive",
+      article_title: "New metro rail extension announced for Secunderabad",
+      comment_text: "The article should have mentioned the cost and how it is being funded. Infrastructure projects like this need more financial transparency.",
+      likelyVerdict: "ALLOW",
+      dotColor: "#10B981"
+    },
+    {
+      id: 3,
+      name: "Borderline Political",
+      category: "Borderline",
+      article_title: "CM attends groundbreaking ceremony for new IT park",
+      comment_text: "Every government announces IT parks before elections. Nothing ever gets completed on time. The people of Telangana deserve better accountability.",
+      likelyVerdict: "NEEDS_REVIEW",
+      dotColor: "#F59E0B"
+    },
+    {
+      id: 4,
+      name: "Abusive Comment",
+      category: "Abusive",
+      article_title: "Opposition holds dharna against new land policy",
+      comment_text: "These opposition leaders are absolute idiots. They have no constructive ideas. Just useless troublemakers wasting everyone's time.",
+      likelyVerdict: "REJECT",
+      dotColor: "#EF4444"
+    },
+    {
+      id: 5,
+      name: "Defamatory",
+      category: "Defamation",
+      article_title: "Municipality tenders awarded for road construction",
+      comment_text: "Everyone knows the municipal commissioner accepts bribes from contractors. This tender was clearly fixed. He should be arrested immediately.",
+      likelyVerdict: "REJECT",
+      dotColor: "#EF4444"
+    },
+    {
+      id: 6,
+      name: "Hate Speech",
+      category: "Hate Speech",
+      article_title: "Religious festival celebrated across Hyderabad",
+      comment_text: "Supporters of Party X are all anti-nationals and traitors. These people should never be trusted. They are destroying Telangana's culture.",
+      likelyVerdict: "REJECT",
+      dotColor: "#EF4444"
+    }
+  ];
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+      
+      {/* Header */}
+      <div>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--ink)', fontWeight: 700, marginBottom: '4px' }}>
+          Moderation Templates
+        </h1>
+        <p className="page-subtitle">One-click sample comments for testing</p>
+      </div>
+
+      <div className="divider" />
+
+      {/* Grid */}
+      <div className="templates-grid">
+        {presets.map((preset) => {
+          let categoryBg = 'var(--allow-badge)';
+          let categoryText = 'var(--allow-text)';
+          if (preset.likelyVerdict === 'NEEDS_REVIEW') {
+            categoryBg = 'var(--review-badge)';
+            categoryText = 'var(--review-text)';
+          } else if (preset.likelyVerdict === 'REJECT') {
+            categoryBg = 'var(--reject-badge)';
+            categoryText = 'var(--reject-text)';
+          }
+
+          // Truncate comment preview (3 lines)
+          const truncatedComment = preset.comment_text.length > 130
+            ? preset.comment_text.substring(0, 130) + '...'
+            : preset.comment_text;
+
+          return (
+            <div
+              key={preset.id}
+              className="card hover-lift"
+              style={{
+                padding: '24px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: '16px',
+                minHeight: '220px'
+              }}
+            >
+              {/* Top Meta info */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <h3 style={{ fontFamily: 'var(--font-body)', fontSize: '15px', fontWeight: 600, color: 'var(--ink)' }}>
+                    {preset.name}
+                  </h3>
+                  
+                  <span
+                    className="badge-pill"
+                    style={{
+                      backgroundColor: categoryBg,
+                      color: categoryText,
+                      fontSize: '11px',
+                      fontWeight: 700
+                    }}
+                  >
+                    {preset.category}
+                  </span>
+                </div>
+
+                <p style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Article Context:
+                </p>
+                <p style={{ fontSize: '13px', fontStyle: 'italic', color: 'var(--ink)', marginBottom: '8px' }}>
+                  "{preset.article_title}"
+                </p>
+                
+                <p style={{ fontSize: '13px', color: 'var(--ink)', lineHeight: 1.5 }}>
+                  "{truncatedComment}"
+                </p>
+              </div>
+
+              {/* Bottom Actions */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)', paddingTop: '12px', marginTop: '4px' }}>
+                {/* Likely verdict indicator */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: preset.dotColor
+                    }}
+                  />
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--muted)' }}>
+                    Likely: {preset.likelyVerdict}
+                  </span>
+                </div>
+
+                <button
+                  onClick={() => onUseTemplate({
+                    article_title: preset.article_title,
+                    reader_name: preset.category === 'Positive' ? 'Suresh Reddy' : preset.category === 'Constructive' ? 'Reader' : 'Anonymous',
+                    comment_text: preset.comment_text
+                  })}
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    color: 'var(--sidebar-active-border)',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: 0
+                  }}
+                >
+                  Use Template →
+                </button>
+              </div>
+
+            </div>
+          );
+        })}
+      </div>
+
+    </div>
+  );
+}
