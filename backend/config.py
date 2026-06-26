@@ -26,12 +26,25 @@ class Config:
     placeholder_passwords = {'your_password', 'your_mysql_password_here'}
 
     if DATABASE_URL:
-        SQLALCHEMY_DATABASE_URI = DATABASE_URL
-        DATABASE_ENGINE = DATABASE_URL.split(':', 1)[0]
+        # If the URL starts with mysql://, replace it with mysql+pymysql:// for SQLAlchemy
+        if DATABASE_URL.startswith('mysql://'):
+            SQLALCHEMY_DATABASE_URI = DATABASE_URL.replace('mysql://', 'mysql+pymysql://', 1)
+        else:
+            SQLALCHEMY_DATABASE_URI = DATABASE_URL
+
+        # Remove any unsupported query parameters like ssl-mode=REQUIRED which crash PyMySQL
+        import re
+        SQLALCHEMY_DATABASE_URI = re.sub(r'[?&]ssl-mode=[^&]+', '', SQLALCHEMY_DATABASE_URI)
+
+        DATABASE_ENGINE = SQLALCHEMY_DATABASE_URI.split(':', 1)[0]
         SQLALCHEMY_ENGINE_OPTIONS = {
             "pool_pre_ping": True,
             "pool_recycle": 3600
-        } if DATABASE_URL.startswith('mysql') else {}
+        } if DATABASE_ENGINE.startswith('mysql') else {}
+
+        # Add SSL arguments for MySQL connection to satisfy Aiven's requirements
+        if DATABASE_ENGINE.startswith('mysql'):
+            SQLALCHEMY_ENGINE_OPTIONS["connect_args"] = {"ssl": {}}
     elif USE_MYSQL or mysql_host:
         MYSQL_HOST = mysql_host
         MYSQL_PORT = mysql_port
