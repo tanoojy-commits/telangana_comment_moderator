@@ -52,7 +52,10 @@ class Config:
         }
     else:
         # SQLite fallback: Combines the database directly inside the project folder
-        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'telangana_moderation.db')
+        if 'VERCEL' in os.environ or 'AWS_LAMBDA_FUNCTION_NAME' in os.environ:
+            db_path = '/tmp/telangana_moderation.db'
+        else:
+            db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'telangana_moderation.db')
         SQLALCHEMY_DATABASE_URI = f"sqlite:///{db_path}"
         DATABASE_ENGINE = 'sqlite'
         SQLALCHEMY_ENGINE_OPTIONS = {}
