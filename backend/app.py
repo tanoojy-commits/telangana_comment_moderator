@@ -89,7 +89,7 @@ def create_app(config_class=Config):
 
         return jsonify({
             'status': 'ok',
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': datetime.utcnow().isoformat() + 'Z',
             'database': database
         }), 200
         

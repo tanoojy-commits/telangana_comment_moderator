@@ -64,8 +64,8 @@ def get_history():
             'suggested_edit': r.suggested_edit,
             'editor_verdict': r.editor_verdict,
             'editor_decision_note': r.editor_decision_note,
-            'decided_at': r.decided_at.isoformat() if r.decided_at else None,
-            'created_at': r.created_at.isoformat() if r.created_at else None
+            'decided_at': (r.decided_at.isoformat() + 'Z') if r.decided_at else None,
+            'created_at': (r.created_at.isoformat() + 'Z') if r.created_at else None
         })
         
     pages = math.ceil(total / limit) if total > 0 else 1

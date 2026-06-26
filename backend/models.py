@@ -55,9 +55,9 @@ class ModerationRecord(db.Model):
             'suggested_edit': self.suggested_edit,
             'editor_verdict': self.editor_verdict,
             'editor_decision_note': self.editor_decision_note,
-            'decided_at': self.decided_at.isoformat() if self.decided_at else None,
+            'decided_at': (self.decided_at.isoformat() + 'Z') if self.decided_at else None,
             'response_time_ms': self.response_time_ms,
-            'created_at': self.created_at.isoformat() if self.created_at else None
+            'created_at': (self.created_at.isoformat() + 'Z') if self.created_at else None
         }
 
 
@@ -76,7 +76,7 @@ class Feedback(db.Model):
             'record_id': self.record_id,
             'rating': self.rating,
             'comment': self.comment,
-            'created_at': self.created_at.isoformat() if self.created_at else None
+            'created_at': (self.created_at.isoformat() + 'Z') if self.created_at else None
         }
 
 
@@ -97,5 +97,5 @@ class Template(db.Model):
             'article_title': self.article_title,
             'sample_comment': self.sample_comment,
             'category': self.category,
-            'created_at': self.created_at.isoformat() if self.created_at else None
+            'created_at': (self.created_at.isoformat() + 'Z') if self.created_at else None
         }
