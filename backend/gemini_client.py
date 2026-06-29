@@ -193,6 +193,22 @@ def call_gemini(prompt_text):
         response_time_ms = int((time.time() - start_time) * 1000)
         return get_mock_response(prompt_text), response_time_ms
 
+    from prompt_engine import get_few_shot_examples
+    
+    # 1. Build contents list containing few-shot history
+    contents = []
+    for example in get_few_shot_examples():
+        role = "user" if example["role"] == "user" else "model"
+        contents.append({
+            "role": role,
+            "parts": [example["content"]]
+        })
+    # Add current prompt
+    contents.append({
+        "role": "user",
+        "parts": [prompt_text]
+    })
+
     try:
         try:
             model = genai.GenerativeModel(
@@ -202,7 +218,9 @@ def call_gemini(prompt_text):
         except TypeError:
             logger.info("GenerativeModel does not support system_instruction parameter, using prompt prefix fallback.")
             model = genai.GenerativeModel(model_name="gemini-1.5-pro")
-            prompt_text = f"{get_system_prompt()}\n\n{prompt_text}"
+            # Fallback: Prepend system prompt to the first user turn in history
+            if contents:
+                contents[0]["parts"][0] = f"{get_system_prompt()}\n\n{contents[0]['parts'][0]}"
         
         # Generation configuration for structured JSON output
         try:
@@ -219,7 +237,7 @@ def call_gemini(prompt_text):
             )
         
         response = model.generate_content(
-            contents=prompt_text,
+            contents=contents,
             generation_config=generation_config
         )
         
@@ -238,7 +256,34 @@ def call_gemini(prompt_text):
             
         parsed_response = json.loads(raw_text)
         
-        # Normalize fields from new prompt JSON format to our internal database format
+        # Normalize fields from new prompt JSON format (v6) to our internal database/frontend format
+        if "verdict" in parsed_response:
+            verdict = str(parsed_response["verdict"]).upper().strip()
+            if verdict in ["APPROVE", "APPROVED", "ALLOW", "ALLOWS"]:
+                parsed_response["verdict"] = "ALLOW"
+            elif verdict in ["REVIEW", "NEEDS_REVIEW"]:
+                parsed_response["verdict"] = "NEEDS_REVIEW"
+            elif verdict in ["REJECT", "REJECTED"]:
+                parsed_response["verdict"] = "REJECT"
+
+        if "confidence_score" in parsed_response:
+            try:
+                conf = float(parsed_response["confidence_score"])
+                # Map 0-100 to 0.0-1.0
+                parsed_response["confidence_score"] = conf / 100.0 if conf > 1.0 else conf
+            except Exception:
+                parsed_response["confidence_score"] = 0.8
+
+        if "analysis_summary" in parsed_response and "reason" not in parsed_response:
+            parsed_response["reason"] = parsed_response["analysis_summary"]
+            
+        if "recommendation" in parsed_response and "editor_note" not in parsed_response:
+            parsed_response["editor_note"] = parsed_response["recommendation"]
+            
+        if "flagged_phrases" in parsed_response and "problematic_phrases" not in parsed_response:
+            parsed_response["problematic_phrases"] = parsed_response["flagged_phrases"]
+
+        # Legacy and fallback mappings
         if "status" in parsed_response and "verdict" not in parsed_response:
             parsed_response["verdict"] = parsed_response["status"]
             
@@ -261,7 +306,7 @@ def call_gemini(prompt_text):
         
         # Validate values to map ALLOW/NEEDS_REVIEW/REJECT
         verdict = str(parsed_response.get("verdict", "NEEDS_REVIEW")).upper().strip()
-        if verdict in ["APPROVED", "ALLOW", "ALLOWS"]:
+        if verdict in ["APPROVED", "ALLOW", "ALLOWS", "APPROVE"]:
             parsed_response["verdict"] = "ALLOW"
         elif verdict in ["REJECTED", "REJECT", "ABUSIVE", "HATE_SPEECH", "DEFAMATION"]:
             parsed_response["verdict"] = "REJECT"
