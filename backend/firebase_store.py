@@ -72,7 +72,7 @@ def get_client():
 def health_check():
     db = get_client()
     # A lightweight read verifies credentials, project access, and Firestore API availability.
-    list(db.collection("_health").limit(1).stream())
+    list(db.collection("_health").limit(1).get())
     return True
 
 
@@ -117,7 +117,7 @@ def get_moderation_record(record_id):
 
 
 def list_moderation_records(page=1, limit=20, verdict_filter="", search_query=""):
-    snapshots = get_client().collection("moderation_records").stream()
+    snapshots = get_client().collection("moderation_records").get()
     records = [_document_to_dict(snapshot) for snapshot in snapshots]
 
     if verdict_filter:
@@ -158,7 +158,7 @@ def delete_moderation_record(record_id):
     doc_ref = db.collection("moderation_records").document(str(record_id))
     if not doc_ref.get().exists:
         return False
-    for feedback in db.collection("feedback").where("record_id", "==", str(record_id)).stream():
+    for feedback in db.collection("feedback").where("record_id", "==", str(record_id)).get():
         feedback.reference.delete()
     doc_ref.delete()
     return True
@@ -191,7 +191,7 @@ def list_feedback(record_id=None):
     query = get_client().collection("feedback")
     if record_id is not None:
         query = query.where("record_id", "==", str(record_id))
-    return [_document_to_dict(snapshot) for snapshot in query.stream()]
+    return [_document_to_dict(snapshot) for snapshot in query.get()]
 
 
 def get_feedback_summary_data():
@@ -211,7 +211,7 @@ def get_feedback_summary_data():
 
 
 def get_analytics_data():
-    records = [_document_to_dict(snapshot) for snapshot in get_client().collection("moderation_records").stream()]
+    records = [_document_to_dict(snapshot) for snapshot in get_client().collection("moderation_records").get()]
     feedbacks = list_feedback()
     total = len(records)
 
@@ -268,7 +268,7 @@ def get_analytics_data():
 
 
 def list_templates():
-    templates = [_document_to_dict(snapshot) for snapshot in get_client().collection("templates").stream()]
+    templates = [_document_to_dict(snapshot) for snapshot in get_client().collection("templates").get()]
     templates.sort(key=lambda template: template.get("created_at") or "", reverse=True)
     return templates
 
