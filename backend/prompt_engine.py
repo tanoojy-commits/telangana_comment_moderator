@@ -1,3 +1,8 @@
+"""
+prompt_engine.py - AI Prompt Engine v6
+Strict spam + baseless news detection for Telangana Today
+"""
+
 SYSTEM_PROMPT = """You are a professional editorial AI assistant for Telangana Today, a major Telugu-language newspaper. Your job is to analyze reader-submitted comments for the following violations:
 
 VIOLATION CATEGORIES (evaluate ALL of these for every comment):
@@ -35,9 +40,9 @@ VIOLATION CATEGORIES (evaluate ALL of these for every comment):
 
 SCORING RULES:
 - Confidence score = your certainty that the comment VIOLATES policy (0 = definitely clean, 100 = definitely violates)
-- Score 0–30: APPROVE — publish without intervention
-- Score 31–60: REVIEW — flag for human editor review before publishing
-- Score 61–100: REJECT — do not publish under any circumstances
+- Score 0-30: APPROVE - publish without intervention
+- Score 31-60: REVIEW - flag for human editor review before publishing
+- Score 61-100: REJECT - do not publish under any circumstances
 
 STRICT RULES YOU MUST FOLLOW:
 - Never approve spam regardless of politeness
@@ -68,8 +73,10 @@ You MUST respond with ONLY a valid JSON object. No markdown. No explanation outs
 }
 """
 
+
 def get_system_prompt() -> str:
     return SYSTEM_PROMPT
+
 
 def build_user_prompt(article_title: str, reader_name: str, comment_text: str) -> str:
     """
@@ -100,8 +107,10 @@ Evaluate this comment against ALL five violation categories in your instructions
 
     return prompt
 
+
 def build_moderation_prompt(article_title: str, reader_name: str, comment_text: str) -> str:
     return build_user_prompt(article_title, reader_name, comment_text)
+
 
 def get_few_shot_examples() -> list:
     """
@@ -114,8 +123,8 @@ def get_few_shot_examples() -> list:
             "content": build_user_prompt(
                 article_title="CM inaugurates new expressway project",
                 reader_name="user123",
-                comment_text="BUY CHEAP MEDICINES ONLINE!!! VISIT WWW.PHARMA99.COM GET 50% OFF TODAY ONLY LIMITED TIME OFFER CLICK NOW"
-            )
+                comment_text="BUY CHEAP MEDICINES ONLINE!!! VISIT WWW.PHARMA99.COM GET 50% OFF TODAY ONLY LIMITED TIME OFFER CLICK NOW",
+            ),
         },
         {
             "role": "assistant",
@@ -130,19 +139,19 @@ def get_few_shot_examples() -> list:
     "defamatory": false,
     "politically_inflammatory": false
   },
-  "analysis_summary": "This comment is pure commercial spam with no relation to the article about the expressway project. It contains an external URL, promotional pricing language, and excessive capitalization — all hallmarks of automated spam content.",
+  "analysis_summary": "This comment is pure commercial spam with no relation to the article about the expressway project. It contains an external URL, promotional pricing language, and excessive capitalization - all hallmarks of automated spam content.",
   "flagged_phrases": ["BUY CHEAP MEDICINES ONLINE", "WWW.PHARMA99.COM", "LIMITED TIME OFFER"],
   "recommendation": "Reject immediately. This is automated commercial spam. Block the submitting account and mark the IP for monitoring.",
   "safe_to_publish": false
-}"""
+}""",
         },
         {
             "role": "user",
             "content": build_user_prompt(
                 article_title="State government announces new education policy",
                 reader_name="ravi_k",
-                comment_text="Great initiative! More schools in rural areas will really help children access quality education. Hope the implementation is as strong as the announcement."
-            )
+                comment_text="Great initiative! More schools in rural areas will really help children access quality education. Hope the implementation is as strong as the announcement.",
+            ),
         },
         {
             "role": "assistant",
@@ -161,15 +170,15 @@ def get_few_shot_examples() -> list:
   "flagged_phrases": [],
   "recommendation": "Approve for immediate publication. The comment adds value to public discourse on the topic.",
   "safe_to_publish": true
-}"""
+}""",
         },
         {
             "role": "user",
             "content": build_user_prompt(
                 article_title="Local politician attends community event",
                 reader_name="truth_seeker",
-                comment_text="This politician has been secretly laundering crores of rupees into foreign accounts. I have proof but can't show it publicly. Everyone knows this is true."
-            )
+                comment_text="This politician has been secretly laundering crores of rupees into foreign accounts. I have proof but can't show it publicly. Everyone knows this is true.",
+            ),
         },
         {
             "role": "assistant",
@@ -188,6 +197,6 @@ def get_few_shot_examples() -> list:
   "flagged_phrases": ["secretly laundering crores of rupees", "I have proof but can't show it", "Everyone knows this is true"],
   "recommendation": "Reject. This is potentially defamatory content. If submitted frequently from the same user, escalate to legal team. Do not publish under any circumstances.",
   "safe_to_publish": false
-}"""
-        }
+}""",
+        },
     ]

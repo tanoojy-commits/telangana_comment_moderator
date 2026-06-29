@@ -91,7 +91,14 @@ def get_mock_response(prompt_text):
         
     # 2. Needs Review - Borderline Political
     # Borderline Sample: "government always announces big projects before elections. I'll believe it when I see it actually completed."
-    elif "elections" in comment_part or "promises, not enough action" in comment_part or "completely failed" in comment_part or "deserve better accountability" in comment_part:
+    elif (
+        "elections" in comment_part
+        or "promises, not enough action" in comment_part
+        or "completely failed" in comment_part
+        or "deserve better accountability" in comment_part
+        or "implementation must improve" in comment_part
+        or "disagree with this policy" in comment_part
+    ):
         return {
             "verdict": "NEEDS_REVIEW",
             "category": "Borderline",
