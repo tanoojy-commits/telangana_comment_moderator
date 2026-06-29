@@ -89,7 +89,7 @@ def create_moderation_record(payload):
         "article_title": payload.get("article_title", ""),
         "reader_name": payload.get("reader_name", ""),
         "comment_text": payload.get("comment_text", ""),
-        "prompt_version": payload.get("prompt_version", "v5"),
+        "prompt_version": payload.get("prompt_version", "v6"),
         "verdict": payload.get("verdict", "NEEDS_REVIEW"),
         "category": payload.get("category", "Borderline"),
         "confidence_score": float(payload.get("confidence_score", 0.0)),
@@ -102,6 +102,11 @@ def create_moderation_record(payload):
         "editor_decision_note": payload.get("editor_decision_note"),
         "decided_at": payload.get("decided_at"),
         "response_time_ms": int(payload.get("response_time_ms", 0)),
+        "quality_score": float(payload.get("quality_score", 0.0)),
+        "relevance_score": float(payload.get("relevance_score", 0.0)),
+        "spam_score": float(payload.get("spam_score", 0.0)),
+        "toxicity_score": float(payload.get("toxicity_score", 0.0)),
+        "grammar_score": float(payload.get("grammar_score", 0.0)),
         "created_at": payload.get("created_at") or _utc_now(),
     }
     _, doc_ref = get_client().collection("moderation_records").add(data)

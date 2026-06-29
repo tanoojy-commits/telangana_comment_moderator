@@ -58,7 +58,7 @@ def generate_moderation():
             'article_title': article_title,
             'reader_name': reader_name,
             'comment_text': comment_text,
-            'prompt_version': 'v5',
+            'prompt_version': 'v6',
             'verdict': ai_res.get('verdict', 'NEEDS_REVIEW'),
             'category': ai_res.get('category', 'Borderline'),
             'confidence_score': ai_res.get('confidence_score', 0.0),
@@ -67,7 +67,12 @@ def generate_moderation():
             'safe_to_publish': ai_res.get('safe_to_publish', False),
             'editor_note': ai_res.get('editor_note'),
             'suggested_edit': ai_res.get('suggested_edit'),
-            'response_time_ms': response_time_ms
+            'response_time_ms': response_time_ms,
+            'quality_score': ai_res.get('quality_score', 0.0),
+            'relevance_score': ai_res.get('relevance_score', 0.0),
+            'spam_score': ai_res.get('spam_score', 0.0),
+            'toxicity_score': ai_res.get('toxicity_score', 0.0),
+            'grammar_score': ai_res.get('grammar_score', 0.0)
         })
         result = {
             'id': record['id'],
@@ -79,7 +84,12 @@ def generate_moderation():
             'safe_to_publish': record['safe_to_publish'],
             'editor_note': record.get('editor_note'),
             'suggested_edit': record.get('suggested_edit'),
-            'response_time_ms': response_time_ms
+            'response_time_ms': response_time_ms,
+            'quality_score': record.get('quality_score', 0.0),
+            'relevance_score': record.get('relevance_score', 0.0),
+            'spam_score': record.get('spam_score', 0.0),
+            'toxicity_score': record.get('toxicity_score', 0.0),
+            'grammar_score': record.get('grammar_score', 0.0)
         }
         return jsonify(result), 200
     except Exception as e:
