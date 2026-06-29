@@ -46,13 +46,12 @@ telangana-comment-moderator/
 
 ---
 
-## 1. Local Database Setup (MySQL)
+## 1. Local Database Setup (Firebase Firestore)
 
-1. Connect to your local MySQL instance.
-2. Run the SQL script to configure the database:
-   ```bash
-   mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS telangana_moderation;"
-   ```
+1. Open Firebase Console and create or select a Firebase project.
+2. Enable Firestore Database for that project.
+3. Go to Project settings > Service accounts and generate a new private key JSON.
+4. Save that JSON outside git and set its path in `backend/.env` as `FIREBASE_CREDENTIALS_PATH`.
 
 ---
 
@@ -76,16 +75,12 @@ telangana-comment-moderator/
    ```bash
    cp .env.example .env
    ```
-5. Edit the `.env` file and enter your Gemini API Key and MySQL database credentials:
+5. Edit the `.env` file and enter your Gemini API Key plus Firebase credentials:
    ```ini
    GEMINI_API_KEY=AIzaSyYourGeminiAPIKeyHere
-   USE_MYSQL=true
-   MYSQL_HOST=localhost
-   MYSQL_PORT=3306
-   MYSQL_USER=root
-   MYSQL_PASSWORD=your_mysql_password
-   MYSQL_DB=telangana_moderation
    SECRET_KEY=generate_a_random_secret_string
+   FIREBASE_PROJECT_ID=your_firebase_project_id
+   FIREBASE_CREDENTIALS_PATH=C:\absolute\path\to\firebase-service-account.json
    ```
    *Note: If no Gemini API Key is provided, the backend automatically runs in mock mode for offline local testing.*
 6. Start the backend Flask server:
@@ -118,7 +113,7 @@ telangana-comment-moderator/
 
 The repository includes a [vercel.json](vercel.json) file configured for a unified deployment:
 1. Deploy the code via Vercel CLI or by linking your Git repository.
-2. Set `USE_MYSQL=true` in Vercel project environment variables, and configure a remote MySQL database (e.g., Clever Cloud, AWS RDS) since serverless filesystems are read-only.
+2. Set `FIREBASE_PROJECT_ID` and `FIREBASE_SERVICE_ACCOUNT_JSON` in Vercel project environment variables.
 
 ---
 

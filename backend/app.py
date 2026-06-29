@@ -3,10 +3,10 @@ from flask_cors import CORS
 from datetime import datetime
 import logging
 import os
-import pymysql
 
 from config import Config
-from models import db
+from firebase_store import FirebaseConfigurationError, health_check as firebase_health_check
+from firebase_store import init_firebase
 from routes.generate import generate_bp
 from routes.history import history_bp
 from routes.feedback import feedback_bp
@@ -15,30 +15,6 @@ from routes.analytics import analytics_bp
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-def ensure_mysql_database(app):
-    if app.config.get('DATABASE_ENGINE') != 'mysql' or not app.config.get('MYSQL_HOST'):
-        return
-
-    db_name = app.config.get('MYSQL_DB')
-    safe_db_name = db_name.replace('`', '``')
-
-    connection = pymysql.connect(
-        host=app.config.get('MYSQL_HOST'),
-        port=int(app.config.get('MYSQL_PORT', 3306)),
-        user=app.config.get('MYSQL_USER'),
-        password=app.config.get('MYSQL_PASSWORD', ''),
-        charset='utf8mb4',
-        autocommit=True
-    )
-    try:
-        with connection.cursor() as cursor:
-            cursor.execute(
-                f"CREATE DATABASE IF NOT EXISTS `{safe_db_name}` "
-                "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
-            )
-    finally:
-        connection.close()
 
 def create_app(config_class=Config):
     # Set up static folder path pointing to Vite's output dist directory
@@ -60,13 +36,13 @@ def create_app(config_class=Config):
         "allow_headers": ["Content-Type", "Authorization"]
     }})
     
-    # Initialize DB
+    firebase_error = None
     try:
-        ensure_mysql_database(app)
-    except Exception as e:
-        logger.error(f"Error preparing MySQL database: {str(e)}")
-
-    db.init_app(app)
+        init_firebase(config_class)
+        logger.info("Firebase Firestore initialized successfully.")
+    except FirebaseConfigurationError as e:
+        firebase_error = str(e)
+        logger.error(firebase_error)
     
     # Register blueprints with /api prefix
     app.register_blueprint(generate_bp, url_prefix='/api')
@@ -78,14 +54,17 @@ def create_app(config_class=Config):
     @app.route('/api/health', methods=['GET'])
     def health_check():
         database = {
-            'engine': app.config.get('DATABASE_ENGINE', 'unknown'),
+            'engine': 'firebase',
             'connected': False
         }
-        try:
-            db.session.execute(db.select(1))
-            database['connected'] = True
-        except Exception as e:
-            database['error'] = str(e)
+        if firebase_error:
+            database['error'] = firebase_error
+        else:
+            try:
+                firebase_health_check()
+                database['connected'] = True
+            except Exception as e:
+                database['error'] = str(e)
 
         return jsonify({
             'status': 'ok',
@@ -114,17 +93,7 @@ def create_app(config_class=Config):
     def internal_error(error):
         logger.error(f"Internal server error: {str(error)}")
         return jsonify({'error': 'An internal server error occurred.'}), 500
-        
-    # Initialize Database Tables
-    with app.app_context():
-        try:
-            # Tables are created if they do not exist.
-            # Schema alterations have already run, so we can persist all records across restarts.
-            db.create_all()
-            logger.info("Database tables initialized successfully for v5.")
-        except Exception as e:
-            logger.error(f"Error creating database tables: {str(e)}")
-            
+
     return app
 
 app = create_app()

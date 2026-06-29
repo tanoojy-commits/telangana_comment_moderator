@@ -1,6 +1,5 @@
 from flask import Blueprint, request, jsonify
-from models import db, Feedback, ModerationRecord
-from sqlalchemy import func
+from firebase_store import create_feedback, get_feedback_summary_data, get_moderation_record
 
 feedback_bp = Blueprint('feedback', __name__)
 
@@ -25,51 +24,24 @@ def submit_feedback():
         return jsonify({'error': 'Rating must be an integer between 1 and 5.'}), 400
         
     # Check if record exists
-    record = ModerationRecord.query.get(record_id)
+    record = get_moderation_record(record_id)
     if not record:
         return jsonify({'error': 'Moderation record not found.'}), 404
-        
+
     try:
-        # Create Feedback
-        feedback = Feedback(
-            record_id=record_id,
-            rating=rating,
-            comment=comment if comment else None
-        )
-        db.session.add(feedback)
-        db.session.commit()
-        
+        feedback = create_feedback(record_id, rating, comment if comment else None)
         return jsonify({
             'message': 'Feedback submitted successfully.',
-            'feedback': feedback.to_dict()
+            'feedback': feedback
         }), 201
-        
     except Exception as e:
-        db.session.rollback()
         return jsonify({'error': f'Failed to save feedback: {str(e)}'}), 500
 
 
 @feedback_bp.route('/feedback/summary', methods=['GET'])
 def get_feedback_summary():
     try:
-        total = Feedback.query.count()
-        if total == 0:
-            return jsonify({
-                'average_rating': 0.0,
-                'total_feedback': 0,
-                'rating_distribution': {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
-            }), 200
-            
-        avg_rating_query = db.session.query(func.avg(Feedback.rating)).scalar()
-        average_rating = round(float(avg_rating_query), 2) if avg_rating_query else 0.0
-        
-        # Build rating distribution
-        dist = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
-        counts = db.session.query(Feedback.rating, func.count(Feedback.id)).group_by(Feedback.rating).all()
-        for rating, count in counts:
-            if rating in dist:
-                dist[rating] = count
-                
+        average_rating, total, dist = get_feedback_summary_data()
         return jsonify({
             'average_rating': average_rating,
             'total_feedback': total,

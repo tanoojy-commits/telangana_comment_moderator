@@ -16,12 +16,20 @@ ENV/
 # Local Environment Secrets
 **/backend/.env
 .env
+*service-account*.json
+*firebase*.json
+firebase-credentials.json
 
 # Local Databases
 **/backend/telangana_moderation.db
 *.db
 *.sqlite
 
+# Local server logs
+*.log
+
 # OS generated files
 .DS_Store
 Thumbs.db
+
+.vercel

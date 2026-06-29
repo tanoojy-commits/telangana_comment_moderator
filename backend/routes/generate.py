@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from models import db, ModerationRecord
+from firebase_store import create_moderation_record
 from prompt_engine import build_moderation_prompt
 from gemini_client import call_gemini
 import concurrent.futures
@@ -54,43 +54,36 @@ def generate_moderation():
     ai_res, response_time_ms = call_gemini(prompt)
     
     try:
-        # Save record to database
-        record = ModerationRecord(
-            article_title=article_title,
-            reader_name=reader_name,
-            comment_text=comment_text,
-            prompt_version='v5',
-            verdict=ai_res.get('verdict', 'NEEDS_REVIEW'),
-            category=ai_res.get('category', 'Borderline'),
-            confidence_score=ai_res.get('confidence_score', 0.0),
-            reason=ai_res.get('reason', ''),
-            problematic_phrases=ai_res.get('problematic_phrases', []),
-            safe_to_publish=ai_res.get('safe_to_publish', False),
-            editor_note=ai_res.get('editor_note'),
-            suggested_edit=ai_res.get('suggested_edit'),
-            response_time_ms=response_time_ms
-        )
-        db.session.add(record)
-        db.session.commit()
-        
-        # Build response matching spec
+        record = create_moderation_record({
+            'article_title': article_title,
+            'reader_name': reader_name,
+            'comment_text': comment_text,
+            'prompt_version': 'v5',
+            'verdict': ai_res.get('verdict', 'NEEDS_REVIEW'),
+            'category': ai_res.get('category', 'Borderline'),
+            'confidence_score': ai_res.get('confidence_score', 0.0),
+            'reason': ai_res.get('reason', ''),
+            'problematic_phrases': ai_res.get('problematic_phrases', []),
+            'safe_to_publish': ai_res.get('safe_to_publish', False),
+            'editor_note': ai_res.get('editor_note'),
+            'suggested_edit': ai_res.get('suggested_edit'),
+            'response_time_ms': response_time_ms
+        })
         result = {
-            'id': record.id,
-            'verdict': record.verdict,
-            'category': record.category,
-            'confidence_score': record.confidence_score,
-            'reason': record.reason,
-            'problematic_phrases': record.problematic_phrases,
-            'safe_to_publish': record.safe_to_publish,
-            'editor_note': record.editor_note,
-            'suggested_edit': record.suggested_edit,
+            'id': record['id'],
+            'verdict': record['verdict'],
+            'category': record['category'],
+            'confidence_score': record['confidence_score'],
+            'reason': record['reason'],
+            'problematic_phrases': record['problematic_phrases'],
+            'safe_to_publish': record['safe_to_publish'],
+            'editor_note': record.get('editor_note'),
+            'suggested_edit': record.get('suggested_edit'),
             'response_time_ms': response_time_ms
         }
         return jsonify(result), 200
-        
     except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': f'Database save failed: {str(e)}'}), 500
+        return jsonify({'error': f'Firebase save failed: {str(e)}'}), 500
 
 
 @generate_bp.route('/generate/batch', methods=['POST'])
@@ -121,43 +114,40 @@ def generate_moderation_batch():
         response_time_ms = t_res['response_time_ms']
         
         try:
-            record = ModerationRecord(
-                article_title=c_data.get('article_title'),
-                reader_name=c_data.get('reader_name'),
-                comment_text=c_data.get('comment_text'),
-                prompt_version='v5',
-                verdict=ai_res.get('verdict', 'NEEDS_REVIEW'),
-                category=ai_res.get('category', 'Borderline'),
-                confidence_score=ai_res.get('confidence_score', 0.0),
-                reason=ai_res.get('reason', ''),
-                problematic_phrases=ai_res.get('problematic_phrases', []),
-                safe_to_publish=ai_res.get('safe_to_publish', False),
-                editor_note=ai_res.get('editor_note'),
-                suggested_edit=ai_res.get('suggested_edit'),
-                response_time_ms=response_time_ms
-            )
-            db.session.add(record)
-            db.session.commit()
+            record = create_moderation_record({
+                'article_title': c_data.get('article_title'),
+                'reader_name': c_data.get('reader_name'),
+                'comment_text': c_data.get('comment_text'),
+                'prompt_version': 'v5',
+                'verdict': ai_res.get('verdict', 'NEEDS_REVIEW'),
+                'category': ai_res.get('category', 'Borderline'),
+                'confidence_score': ai_res.get('confidence_score', 0.0),
+                'reason': ai_res.get('reason', ''),
+                'problematic_phrases': ai_res.get('problematic_phrases', []),
+                'safe_to_publish': ai_res.get('safe_to_publish', False),
+                'editor_note': ai_res.get('editor_note'),
+                'suggested_edit': ai_res.get('suggested_edit'),
+                'response_time_ms': response_time_ms
+            })
             
             results.append({
-                'id': record.id,
-                'article_title': record.article_title,
-                'reader_name': record.reader_name,
-                'comment_text': record.comment_text,
-                'verdict': record.verdict,
-                'category': record.category,
-                'confidence_score': record.confidence_score,
-                'reason': record.reason,
-                'problematic_phrases': record.problematic_phrases,
-                'safe_to_publish': record.safe_to_publish,
-                'editor_note': record.editor_note,
-                'suggested_edit': record.suggested_edit,
+                'id': record['id'],
+                'article_title': record['article_title'],
+                'reader_name': record['reader_name'],
+                'comment_text': record['comment_text'],
+                'verdict': record['verdict'],
+                'category': record['category'],
+                'confidence_score': record['confidence_score'],
+                'reason': record['reason'],
+                'problematic_phrases': record['problematic_phrases'],
+                'safe_to_publish': record['safe_to_publish'],
+                'editor_note': record.get('editor_note'),
+                'suggested_edit': record.get('suggested_edit'),
                 'response_time_ms': response_time_ms
             })
         except Exception as e:
-            db.session.rollback()
             results.append({
-                'error': f'Database save failed: {str(e)}',
+                'error': f'Firebase save failed: {str(e)}',
                 'comment_data': c_data
             })
             
