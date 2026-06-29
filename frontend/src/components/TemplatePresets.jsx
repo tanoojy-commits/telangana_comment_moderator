@@ -55,6 +55,51 @@ export default function TemplatePresets({ onUseTemplate }) {
       comment_text: "Supporters of Party X are all anti-nationals and traitors. These people should never be trusted. They are destroying Telangana's culture.",
       likelyVerdict: "REJECT",
       dotColor: "#EF4444"
+    },
+    {
+      id: 7,
+      name: "Green Transit Feedback",
+      category: "Constructive",
+      article_title: "Telangana RTC introduces 50 new electric buses in Hyderabad",
+      comment_text: "Excellent move to promote green transport! However, they should prioritize routes leading to the IT corridor like Gachibowli and Hitech City where traffic congestion is at its peak.",
+      likelyVerdict: "ALLOW",
+      dotColor: "#10B981"
+    },
+    {
+      id: 8,
+      name: "Weavers Support Praise",
+      category: "Positive",
+      article_title: "Telangana launches direct financial assistance for handloom weavers",
+      comment_text: "Our traditional weavers have been suffering for years due to cheaper powerloom competition. This direct assistance will help them buy raw materials and keep their craft alive. Kudos to the government!",
+      likelyVerdict: "ALLOW",
+      dotColor: "#10B981"
+    },
+    {
+      id: 9,
+      name: "Civic Policy Discontent",
+      category: "Borderline",
+      article_title: "Municipal administration initiates cleanup drive for Musi River",
+      comment_text: "We have heard about Musi cleanup projects for the last 15 years under multiple governments, but nothing changes. Hundreds of crores are allocated, but where is the money going? We need audit transparency.",
+      likelyVerdict: "NEEDS_REVIEW",
+      dotColor: "#F59E0B"
+    },
+    {
+      id: 10,
+      name: "Hostile Governance Abuse",
+      category: "Abusive",
+      article_title: "New government administrative complex inaugurated in Warangal",
+      comment_text: "What a colossal waste of taxpayer funds! These ministers are corrupt thieves who only care about building luxury palaces for themselves while the general public suffers in garbage-filled streets. Absolute clowns.",
+      likelyVerdict: "REJECT",
+      dotColor: "#EF4444"
+    },
+    {
+      id: 11,
+      name: "Commercial Promotion",
+      category: "Spam",
+      article_title: "Hyderabad real estate sees 15% growth in Q1",
+      comment_text: "Looking for affordable plots in Shadnagar? Best rates and high returns guaranteed! Contact Srinivas at 9876543210 for brochure and site visits today!",
+      likelyVerdict: "REJECT",
+      dotColor: "#EF4444"
     }
   ];
 
