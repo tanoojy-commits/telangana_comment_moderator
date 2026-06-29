@@ -2,6 +2,8 @@ from flask import Blueprint, request, jsonify
 from firebase_store import create_moderation_record
 from prompt_engine import build_moderation_prompt
 from gemini_client import call_gemini
+from moderation_engine import check_spam_rules
+import time
 import concurrent.futures
 
 generate_bp = Blueprint('generate', __name__)
@@ -19,9 +21,49 @@ def moderate_single_comment_task(comment_data):
             'error': 'Missing fields',
             'comment_data': comment_data
         }
-        
+
+    start_time = time.time()
+    rule_result = check_spam_rules(comment_text)
+    if rule_result:
+        verdict, category, confidence, reason = rule_result
+        return {
+            'comment_data': comment_data,
+            'ai_response': {
+                'verdict': verdict,
+                'category': category,
+                'confidence_score': confidence / 100.0,
+                'reason': f"[Rule Filter] {reason}",
+                'problematic_phrases': [],
+                'safe_to_publish': False,
+                'editor_note': "Bypassed Gemini AI due to deterministic moderation rules.",
+                'suggested_edit': None,
+                'quality_score': 0.0,
+                'relevance_score': 0.0,
+                'spam_score': 1.0 if category in ["Spam", "Gibberish"] else 0.0,
+                'toxicity_score': 1.0 if category in ["Abuse", "Hate Speech", "Defamation"] else 0.0,
+                'grammar_score': 0.0,
+            },
+            'response_time_ms': int((time.time() - start_time) * 1000)
+        }
+
     prompt = build_moderation_prompt(article_title, reader_name, comment_text)
     ai_response, response_time_ms = call_gemini(prompt)
+
+    if ai_response.get('verdict') == 'ALLOW':
+        rule_result = check_spam_rules(comment_text)
+        if rule_result:
+            verdict, category, confidence, reason = rule_result
+            ai_response['verdict'] = verdict
+            ai_response['category'] = category
+            ai_response['confidence_score'] = confidence / 100.0
+            ai_response['reason'] = f"[Post-AI Override] {reason}"
+            ai_response['problematic_phrases'] = []
+            ai_response['safe_to_publish'] = False
+            ai_response['editor_note'] = "Overrode Gemini ALLOW result due to deterministic moderation rules."
+            ai_response['suggested_edit'] = None
+            ai_response['quality_score'] = 0.0
+            ai_response['spam_score'] = 1.0 if category in ["Spam", "Gibberish"] else 0.0
+            ai_response['toxicity_score'] = 1.0 if category in ["Abuse", "Hate Speech", "Defamation"] else 0.0
     
     return {
         'comment_data': comment_data,
@@ -47,11 +89,73 @@ def generate_moderation():
     if len(comment_text) < 10:
         return jsonify({'error': 'Comment must be at least 10 characters long.'}), 400
         
+    # Layer 1: Rule-Based Pre-AI Spam Filter
+    start_time = time.time()
+    pre_ai_result = check_spam_rules(comment_text)
+    if pre_ai_result:
+        verdict, category, confidence, reason = pre_ai_result
+        response_time_ms = int((time.time() - start_time) * 1000)
+        try:
+            record = create_moderation_record({
+                'article_title': article_title,
+                'reader_name': reader_name,
+                'comment_text': comment_text,
+                'prompt_version': 'v6-rule-bypass',
+                'verdict': verdict,
+                'category': category,
+                'confidence_score': confidence / 100.0,
+                'reason': f"[Rule Filter] {reason}",
+                'problematic_phrases': [],
+                'safe_to_publish': False,
+                'editor_note': "Bypassed Gemini AI due to deterministic moderation rules.",
+                'suggested_edit': None,
+                'response_time_ms': response_time_ms,
+                'quality_score': 0.0,
+                'relevance_score': 0.0,
+                'spam_score': 1.0 if category in ["Spam", "Gibberish"] else 0.0,
+                'toxicity_score': 1.0 if category in ["Abuse", "Hate Speech", "Defamation"] else 0.0,
+                'grammar_score': 0.0
+            })
+            result = {
+                'id': record['id'],
+                'verdict': record['verdict'],
+                'category': record['category'],
+                'confidence_score': record['confidence_score'],
+                'reason': record['reason'],
+                'problematic_phrases': record['problematic_phrases'],
+                'safe_to_publish': record['safe_to_publish'],
+                'editor_note': record.get('editor_note'),
+                'suggested_edit': record.get('suggested_edit'),
+                'response_time_ms': response_time_ms,
+                'quality_score': 0.0,
+                'relevance_score': 0.0,
+                'spam_score': 1.0 if category in ["Spam", "Gibberish"] else 0.0,
+                'toxicity_score': 1.0 if category in ["Abuse", "Hate Speech", "Defamation"] else 0.0,
+                'grammar_score': 0.0
+            }
+            return jsonify(result), 200
+        except Exception as e:
+            return jsonify({'error': f'Firebase save failed during rule bypass: {str(e)}'}), 500
+        
     # Build prompt
     prompt = build_moderation_prompt(article_title, reader_name, comment_text)
     
     # Call AI
     ai_res, response_time_ms = call_gemini(prompt)
+    
+    # Layer 3: Post-AI Validation Rules Override
+    if ai_res.get('verdict') == 'ALLOW':
+        post_ai_result = check_spam_rules(comment_text)
+        if post_ai_result:
+            verdict, category, confidence, reason = post_ai_result
+            ai_res['verdict'] = verdict
+            ai_res['category'] = category
+            ai_res['confidence_score'] = confidence / 100.0
+            ai_res['reason'] = f"[Post-AI Override] {reason}"
+            ai_res['safe_to_publish'] = False
+            ai_res['quality_score'] = 0.0
+            ai_res['spam_score'] = 1.0 if category in ["Spam", "Gibberish"] else 0.0
+            ai_res['toxicity_score'] = 1.0 if category in ["Abuse", "Hate Speech", "Defamation"] else 0.0
     
     try:
         record = create_moderation_record({
@@ -128,7 +232,7 @@ def generate_moderation_batch():
                 'article_title': c_data.get('article_title'),
                 'reader_name': c_data.get('reader_name'),
                 'comment_text': c_data.get('comment_text'),
-                'prompt_version': 'v5',
+                'prompt_version': 'v6',
                 'verdict': ai_res.get('verdict', 'NEEDS_REVIEW'),
                 'category': ai_res.get('category', 'Borderline'),
                 'confidence_score': ai_res.get('confidence_score', 0.0),
