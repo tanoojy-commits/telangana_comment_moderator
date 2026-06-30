@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 # Configure the Gemini API if key is present
 api_key_configured = False
-if Config.GEMINI_API_KEY and Config.GEMINI_API_KEY.startswith("AIzaSy"):
+if Config.GEMINI_API_KEY and (Config.GEMINI_API_KEY.startswith("AIzaSy") or Config.GEMINI_API_KEY.startswith("AQ.")):
     try:
         genai.configure(api_key=Config.GEMINI_API_KEY)
         api_key_configured = True
@@ -21,7 +21,7 @@ if Config.GEMINI_API_KEY and Config.GEMINI_API_KEY.startswith("AIzaSy"):
         logger.error(f"Error configuring Gemini API: {str(e)}")
 else:
     if Config.GEMINI_API_KEY:
-        logger.warning("GEMINI_API_KEY is configured but is invalid (must start with 'AIzaSy'). Fallback mock responses will be used.")
+        logger.warning("GEMINI_API_KEY is configured but unrecognized format (must start with 'AIzaSy' or 'AQ.'). Mock fallback will be used.")
     else:
         logger.warning("GEMINI_API_KEY is not configured. Fallback mock responses will be used.")
 
